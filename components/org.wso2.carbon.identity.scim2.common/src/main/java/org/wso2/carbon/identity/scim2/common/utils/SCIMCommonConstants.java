@@ -114,6 +114,10 @@ public class SCIMCommonConstants {
     public static final String DATE_OF_BIRTH_REGEX = "^\\d{4}-\\d{2}-\\d{2}$";
     public static final String ERROR_CODE_RESOURCE_LIMIT_REACHED = "ATS-10001";
 
+    public static final String ACCOUNT_LOCK_CLAIM_URI = "http://wso2.org/claims/identity/accountLocked";
+    public static final String LOCKED_REASON_CLAIM_URI = "http://wso2.org/claims/identity/lockedReason";
+    public static final String ACCOUNT_STATE_CLAIM_URI = "http://wso2.org/claims/identity/accountState";
+
     /**
      * Enum which contains the error codes and corresponding error messages.
      */
