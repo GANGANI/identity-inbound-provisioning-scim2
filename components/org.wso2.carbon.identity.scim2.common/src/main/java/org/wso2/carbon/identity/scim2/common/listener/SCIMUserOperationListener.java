@@ -61,6 +61,7 @@ import static org.wso2.carbon.identity.scim2.common.utils.SCIMCommonConstants.DO
 import static org.wso2.carbon.identity.scim2.common.utils.SCIMCommonConstants.LOCKED_REASON_CLAIM_URI;
 import static org.wso2.carbon.identity.scim2.common.utils.SCIMCommonConstants.PROP_REG_EX;
 import static org.wso2.carbon.identity.scim2.common.utils.SCIMCommonConstants.PROP_REG_EX_VALIDATION_ERROR;
+import static org.wso2.carbon.identity.scim2.common.utils.SCIMCommonConstants.SECRET_KEY_CLAIM_URI;
 
 /**
  * This is to perform SCIM related operation on User Operations.
@@ -174,9 +175,10 @@ public class SCIMUserOperationListener extends AbstractIdentityUserOperationEven
 
         if (FrameworkUtils.isJITProvisionEnhancedFeatureEnabled() && StringUtils.isNotBlank(claimURI)) {
             // Check whether if this is an account locking scenario.
-            boolean isAccountLockRequest = claimURI.equals(ACCOUNT_LOCK_CLAIM_URI);
-            // Validate whether claim update request is for a JIT provisioned user.
-            validateClaimUpdate(getUsernameFromUserID(userID, userStoreManager), isAccountLockRequest);
+            if (!StringUtils.equals(claimURI, ACCOUNT_LOCK_CLAIM_URI)) {
+                // Validate whether claim update request is for a JIT provisioned user.
+                validateClaimUpdate(getUsernameFromUserID(userID, userStoreManager));
+            }
         }
         // Validate dob value against the regex.
         validateDateOfBirthClaimValue(claimURI, claimValue, userStoreManager);
@@ -233,12 +235,12 @@ public class SCIMUserOperationListener extends AbstractIdentityUserOperationEven
         }
 
         if (FrameworkUtils.isJITProvisionEnhancedFeatureEnabled() && !claims.isEmpty()) {
-            // Check whether if this is an account locking scenario.
-            boolean isAccountLockRequest = claims.containsKey(ACCOUNT_LOCK_CLAIM_URI) ||
-                    claims.containsKey(LOCKED_REASON_CLAIM_URI) ||
-                    claims.containsKey(ACCOUNT_STATE_CLAIM_URI);
-            // Validate whether claim update request is for a JIT provisioned user.
-            validateClaimUpdate(getUsernameFromUserID(userID, userStoreManager), isAccountLockRequest);
+            // Check whether if this is an account locking scenario or TOTP secret key update scenario.
+            if (!(claims.containsKey(ACCOUNT_LOCK_CLAIM_URI) || claims.containsKey(LOCKED_REASON_CLAIM_URI) ||
+                    claims.containsKey(ACCOUNT_STATE_CLAIM_URI) || claims.containsKey(SECRET_KEY_CLAIM_URI))) {
+                // Validate whether claim update request is for a JIT provisioned user.
+                validateClaimUpdate(getUsernameFromUserID(userID, userStoreManager));
+            }
         }
 
         String lastModifiedDate = AttributeUtil.formatDateTime(Instant.now());
@@ -255,12 +257,12 @@ public class SCIMUserOperationListener extends AbstractIdentityUserOperationEven
                                            UserStoreManager userStoreManager) throws UserStoreException {
 
         if (FrameworkUtils.isJITProvisionEnhancedFeatureEnabled() && !claims.isEmpty()) {
-            // Check whether if this is an account locking scenario.
-            boolean isAccountLockRequest = claims.containsKey(ACCOUNT_LOCK_CLAIM_URI) ||
-                    claims.containsKey(LOCKED_REASON_CLAIM_URI) ||
-                    claims.containsKey(ACCOUNT_STATE_CLAIM_URI);
-            // Validate whether claim update request is for a JIT provisioned user.
-            validateClaimUpdate(userName, isAccountLockRequest);
+            // Check whether if this is an account locking scenario or TOTP secret key update scenario.
+            if (!(claims.containsKey(ACCOUNT_LOCK_CLAIM_URI) || claims.containsKey(LOCKED_REASON_CLAIM_URI) ||
+                    claims.containsKey(ACCOUNT_STATE_CLAIM_URI) || claims.containsKey(SECRET_KEY_CLAIM_URI))) {
+                // Validate whether claim update request is for a JIT provisioned user.
+                validateClaimUpdate(userName);
+            }
         }
         return true;
     }
@@ -270,9 +272,10 @@ public class SCIMUserOperationListener extends AbstractIdentityUserOperationEven
 
         if (FrameworkUtils.isJITProvisionEnhancedFeatureEnabled() && StringUtils.isNotBlank(claimURI)) {
             // Check whether if this is an account locking scenario.
-            boolean isAccountLockRequest = claimURI.equals(ACCOUNT_LOCK_CLAIM_URI);
-            // Validate whether claim update request is for a JIT provisioned user.
-            validateClaimUpdate(userName, isAccountLockRequest);
+            if (!StringUtils.equals(claimURI, ACCOUNT_LOCK_CLAIM_URI)) {
+                // Validate whether claim update request is for a JIT provisioned user.
+                validateClaimUpdate(userName);
+            }
         }
         return true;
     }
@@ -286,10 +289,9 @@ public class SCIMUserOperationListener extends AbstractIdentityUserOperationEven
      * Validate whether the claim update request is from a provisioned user.
      *
      * @param username             Username.
-     * @param isAccountLockRequest If this is an account lock request or not.
      * @throws UserStoreException if an error occurred while retrieving the user claim list.
      */
-    private void validateClaimUpdate(String username, boolean isAccountLockRequest) throws UserStoreException {
+    private void validateClaimUpdate(String username) throws UserStoreException {
 
         boolean isAttributeSyncingEnabled = true;
 
@@ -308,11 +310,6 @@ public class SCIMUserOperationListener extends AbstractIdentityUserOperationEven
          */
         if (IdentityUtil.threadLocalProperties.get().get(FrameworkConstants.JIT_PROVISIONING_FLOW) != null &&
                 (Boolean) IdentityUtil.threadLocalProperties.get().get(FrameworkConstants.JIT_PROVISIONING_FLOW)) {
-            return;
-        }
-
-        // If this is an account locking scenario, allow updating the account locking related claims.
-        if (isAccountLockRequest) {
             return;
         }
 

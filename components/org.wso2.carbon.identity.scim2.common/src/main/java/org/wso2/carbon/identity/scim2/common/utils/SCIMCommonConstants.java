@@ -117,6 +117,7 @@ public class SCIMCommonConstants {
     public static final String ACCOUNT_LOCK_CLAIM_URI = "http://wso2.org/claims/identity/accountLocked";
     public static final String LOCKED_REASON_CLAIM_URI = "http://wso2.org/claims/identity/lockedReason";
     public static final String ACCOUNT_STATE_CLAIM_URI = "http://wso2.org/claims/identity/accountState";
+    public static final String SECRET_KEY_CLAIM_URI = "http://wso2.org/claims/identity/secretkey";
 
     /**
      * Enum which contains the error codes and corresponding error messages.
